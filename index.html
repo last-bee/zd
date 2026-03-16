@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易记账本</title>
+    <style>
+        :root {
+            --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #f7f7f7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            margin: 30px auto;
+            width: 400px; /* 稍微宽一点 */
+            max-width: 90%; /* 移动端适配 */
+        }
+
+        h2 {
+            letter-spacing: 1px;
+            margin: 0;
+            text-align: center;
+        }
+
+        h4 {
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .inc-exp-container {
+            background-color: #fff;
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .inc-exp-container > div {
+            flex: 1;
+            text-align: center;
+        }
+
+        .inc-exp-container > div:first-of-type {
+            border-right: 1px solid #dedede;
+        }
+
+        .money {
+            font-size: 20px;
+            letter-spacing: 1px;
+            margin: 5px 0;
+        }
+
+        .money.plus {
+            color: #2ecc71;
+        }
+
+        .money.minus {
+            color: #c0392b;
+        }
+
+        label {
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select {
+            border: 1px solid #dedede;
+            border-radius: 2px;
+            display: block;
+            font-size: 16px;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .btn {
+            cursor: pointer;
+            background-color: #9c88ff;
+            box-shadow: var(--box-shadow);
+            color: #fff;
+            border: 0;
+            display: block;
+            font-size: 16px;
+            margin: 10px 0 30px;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #8e7af0;
+        }
+
+        .btn:focus {
+            outline: 0;
+        }
+
+        .list {
+            list-style-type: none;
+            padding: 0;
+            margin-bottom: 40px;
+        }
+
+        .list li {
+            background-color: #fff;
+            box-shadow: var(--box-shadow);
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+
+        .list li.plus {
+            border-right: 5px solid #2ecc71;
+        }
+
+        .list li.minus {
+            border-right: 5px solid #c0392b;
+        }
+        
+        .list li .date {
+            font-size: 12px;
+            color: #999;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .list li .info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .list li .amount {
+            white-space: nowrap;
+        }
+
+        .delete-btn {
+            cursor: pointer;
+            background-color: #e74c3c;
+            border: 0;
+            color: #fff;
+            font-size: 20px;
+            line-height: 20px;
+            padding: 2px 5px;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translate(-100%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .list li:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        /* 针对移动设备的删除按钮优化 */
+        @media (max-width: 600px) {
+            .delete-btn {
+                opacity: 1; /* 移动端直接显示，因为没有hover */
+                left: -25px; /* 稍微靠右一点避免太远 */
+                font-size: 16px;
+            }
+            .list li {
+                margin-left: 25px; /* 给删除按钮留空间 */
+            }
+        }
+        
+        .filter-container {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: var(--box-shadow);
+            border-radius: 5px;
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .filter-row:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>简易记账本</h2>
+        
+        <h3>统计筛选</h3>
+        <div class="filter-container">
+            <div class="filter-row">
+                <select id="filter-type">
+                    <option value="all">显示全部</option>
+                    <option value="month">按月统计</option>
+                    <option value="week">按周统计</option>
+                </select>
+            </div>
+            <div class="filter-row" id="filter-date-container" style="display: none;">
+                <input type="month" id="filter-month" style="display: none;">
+                <input type="week" id="filter-week" style="display: none;">
+            </div>
+        </div>
+
+        <div class="inc-exp-container">
+            <div>
+                <h4>总余额</h4>
+                <h1 id="balance" class="money">¥0.00</h1>
+            </div>
+        </div>
+
+        <div class="inc-exp-container">
+            <div>
+                <h4>收入</h4>
+                <p id="money-plus" class="money plus">+¥0.00</p>
+            </div>
+            <div>
+                <h4>支出</h4>
+                <p id="money-minus" class="money minus">-¥0.00</p>
+            </div>
+        </div>
+
+        <h3>历史记录</h3>
+        <ul id="list" class="list">
+            <!-- 动态生成列表项 -->
+        </ul>
+
+        <h3>添加新交易</h3>
+        <form id="form">
+            <div class="form-control">
+                <label for="date">日期</label>
+                <input type="date" id="date" required />
+            </div>
+            <div class="form-control">
+                <label for="text">内容/备注</label>
+                <input type="text" id="text" placeholder="输入内容..." />
+            </div>
+            <div class="form-control">
+                <label for="amount">金额 <br />
+                (负数 = 支出, 正数 = 收入)</label>
+                <input type="number" id="amount" placeholder="输入金额..." step="0.01"/>
+            </div>
+            <button class="btn">添加交易</button>
+        </form>
+    </div>
+
+    <script>
+        const balance = document.getElementById('balance');
+        const money_plus = document.getElementById('money-plus');
+        const money_minus = document.getElementById('money-minus');
+        const list = document.getElementById('list');
+        const form = document.getElementById('form');
+        const text = document.getElementById('text');
+        const amount = document.getElementById('amount');
+        const dateInput = document.getElementById('date');
+        
+        const filterType = document.getElementById('filter-type');
+        const filterDateContainer = document.getElementById('filter-date-container');
+        const filterMonth = document.getElementById('filter-month');
+        const filterWeek = document.getElementById('filter-week');
+
+        // 设置默认日期为今天
+        dateInput.valueAsDate = new Date();
+
+        // 从 localStorage 获取交易记录
+        const localStorageTransactions = JSON.parse(
+            localStorage.getItem('transactions')
+        );
+
+        let transactions =
+            localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
+
+        // 迁移旧数据：如果没有日期，默认为今天
+        transactions = transactions.map(t => {
+            if (!t.date) {
+                return { ...t, date: new Date().toISOString().split('T')[0] };
+            }
+            return t;
+        });
+
+        // 监听筛选变化
+        filterType.addEventListener('change', updateFilterView);
+        filterMonth.addEventListener('change', () => { init(); });
+        filterWeek.addEventListener('change', () => { init(); });
+
+        function updateFilterView() {
+            const type = filterType.value;
+            if (type === 'all') {
+                filterDateContainer.style.display = 'none';
+                filterMonth.style.display = 'none';
+                filterWeek.style.display = 'none';
+            } else if (type === 'month') {
+                filterDateContainer.style.display = 'block';
+                filterMonth.style.display = 'block';
+                filterWeek.style.display = 'none';
+                if (!filterMonth.value) {
+                    const today = new Date();
+                    filterMonth.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+                }
+            } else if (type === 'week') {
+                filterDateContainer.style.display = 'block';
+                filterMonth.style.display = 'none';
+                filterWeek.style.display = 'block';
+                if (!filterWeek.value) {
+                    // 设置为当前周
+                    const today = new Date();
+                    const week = getWeekNumber(today);
+                    // ISO 周格式：yyyy-Www
+                    filterWeek.value = `${today.getFullYear()}-W${String(week).padStart(2, '0')}`;
+                }
+            }
+            init();
+        }
+
+        // 获取周数
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return weekNo;
+        }
+
+        // 添加交易
+        function addTransaction(e) {
+            e.preventDefault();
+
+            if (text.value.trim() === '' || amount.value.trim() === '' || dateInput.value === '') {
+                alert('请输入日期、内容和金额');
+                return;
+            }
+
+            const transaction = {
+                id: generateID(),
+                text: text.value,
+                amount: +amount.value,
+                date: dateInput.value
+            };
+
+            transactions.push(transaction);
+
+            updateLocalStorage();
+            
+            // 重置表单，但保留日期
+            text.value = '';
+            amount.value = '';
+            
+            init();
+        }
+
+        // 生成随机ID
+        function generateID() {
+            return Math.floor(Math.random() * 100000000);
+        }
+
+        // 将交易添加到DOM列表
+        function addTransactionDOM(transaction) {
+            // 获取符号
+            const sign = transaction.amount < 0 ? '-' : '+';
+
+            const item = document.createElement('li');
+
+            // 基于金额正负添加类名
+            item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
+
+            item.innerHTML = `
+                <span class="date">${transaction.date}</span>
+                <div class="info">
+                    <span>${transaction.text}</span>
+                </div>
+                <span class="amount">${sign}¥${Math.abs(transaction.amount).toFixed(2)}</span>
+                <button class="delete-btn" onclick="removeTransaction(${transaction.id})">x</button>
+            `;
+
+            list.appendChild(item);
+        }
+
+        // 更新余额、收入和支出
+        function updateValues(filteredTransactions) {
+            const amounts = filteredTransactions.map(transaction => transaction.amount);
+
+            const total = amounts.reduce((acc, item) => (acc += item), 0).toFixed(2);
+
+            const income = amounts
+                .filter(item => item > 0)
+                .reduce((acc, item) => (acc += item), 0)
+                .toFixed(2);
+
+            const expense = (
+                amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) *
+                -1
+            ).toFixed(2);
+
+            balance.innerText = `¥${total}`;
+            money_plus.innerText = `+¥${income}`;
+            money_minus.innerText = `-¥${expense}`;
+        }
+
+        // 通过ID删除交易
+        function removeTransaction(id) {
+            if (confirm('确定要删除这条记录吗？')) {
+                transactions = transactions.filter(transaction => transaction.id !== id);
+                updateLocalStorage();
+                init();
+            }
+        }
+
+        // 更新本地存储
+        function updateLocalStorage() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        // 获取 ISO 周字符串 (yyyy-Www)
+        function getISOWeekStr(dateStr) {
+            const d = new Date(dateStr);
+            const weekNum = getWeekNumber(d);
+            let year = d.getFullYear();
+            
+            // 处理跨年周归属问题
+            // 如果日期是1月且属于去年的周（如52/53），年份减1
+            if (d.getMonth() === 0 && weekNum > 50) year--;
+            // 如果日期是12月且属于明年的周（如1），年份加1
+            if (d.getMonth() === 11 && weekNum === 1) year++;
+            
+            return `${year}-W${String(weekNum).padStart(2, '0')}`;
+        }
+
+        // 初始化应用
+        function init() {
+            list.innerHTML = '';
+            
+            let filteredTransactions = [...transactions];
+            
+            // 默认按日期降序
+            filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // 获取当前筛选条件
+            const type = filterType.value;
+            
+            if (type === 'month' && filterMonth.value) {
+                // filterMonth.value 格式: "2023-10"
+                filteredTransactions = filteredTransactions.filter(t => t.date.startsWith(filterMonth.value));
+            } else if (type === 'week' && filterWeek.value) {
+                // filterWeek.value 格式: "2023-W42"
+                filteredTransactions = filteredTransactions.filter(t => getISOWeekStr(t.date) === filterWeek.value);
+            }
+            // type === 'all' 不做过滤
+
+            filteredTransactions.forEach(addTransactionDOM);
+            updateValues(filteredTransactions);
+        }
+
+        // 页面加载时初始化
+        init();
+        form.addEventListener('submit', addTransaction);
+    </script>
+</body>
+</html>
