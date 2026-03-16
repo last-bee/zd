@@ -4,8 +4,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>简易记账本</title>
+  <title>玥玥记账本</title>
   <style>
+    /* ... 现有样式 ... */
+    /* Tabs Styles */
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      background: #fff;
+      border-radius: 5px;
+      box-shadow: var(--box-shadow);
+      overflow: hidden;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 15px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+      border-bottom: 3px solid transparent;
+      outline: none;
+    }
+
+    .tab-btn:hover {
+      background-color: #f0f0f0;
+    }
+
+    .tab-btn.active {
+      border-bottom-color: #9c88ff;
+      color: #9c88ff;
+      font-weight: bold;
+      background-color: #f9f9f9;
+    }
+
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .data-mgmt-container {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dedede;
+    }
+    
+    .data-mgmt-btn-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn-secondary {
+      background-color: #3498db;
+      box-shadow: var(--box-shadow);
+      color: #fff;
+      border: 0;
+      padding: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      flex: 1;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .btn-secondary:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-outline {
+      background-color: transparent;
+      border: 1px solid #3498db;
+      color: #3498db;
+      box-shadow: none;
+    }
+    
+    .btn-outline:hover {
+      background-color: #3498db;
+      color: #fff;
+    }
+
     :root {
       --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
     }
@@ -37,6 +125,7 @@
       letter-spacing: 1px;
       margin: 0;
       text-align: center;
+      margin-bottom: 20px; /* 增加底部间距 */
     }
 
     h4 {
@@ -214,6 +303,39 @@
     .filter-row:last-child {
       margin-bottom: 0;
     }
+
+    .history-summary {
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: var(--box-shadow);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .history-summary p {
+        margin: 5px 0;
+        font-size: 16px;
+    }
+
+    .history-summary span {
+        font-weight: bold;
+    }
+
+    .category-stats-list {
+        list-style: none;
+        padding: 0;
+        margin-top: 15px;
+        border-top: 1px solid #eee;
+    }
+
+    .category-stats-list li {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #f9f9f9;
+        font-size: 14px;
+    }
   </style>
 </head>
 
@@ -221,61 +343,140 @@
   <div class="container">
     <h2>简易记账本</h2>
 
-    <h3>统计筛选</h3>
-    <div class="filter-container">
-      <div class="filter-row">
-        <select id="filter-type">
-          <option value="all">显示全部</option>
-          <option value="month">按月统计</option>
-          <option value="week">按周统计</option>
-        </select>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-basic">基本功能</button>
+      <button class="tab-btn" data-tab="tab-history">历史记录</button>
+      <button class="tab-btn" data-tab="tab-data">数据管理</button>
+    </div>
+
+    <!-- 基本功能 -->
+    <div id="tab-basic" class="tab-content active">
+      <div style="margin-bottom: 15px;">
+          <select id="dashboard-filter" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+              <option value="month">本月</option>
+              <option value="last-month">上个月</option>
+              <option value="week">本周</option>
+              <option value="last-week">上周</option>
+              <option value="year">本年度</option>
+              <option value="all">全部</option>
+          </select>
       </div>
-      <div class="filter-row" id="filter-date-container" style="display: none;">
-        <input type="month" id="filter-month" style="display: none;">
-        <input type="week" id="filter-week" style="display: none;">
+
+      <div class="inc-exp-container">
+        <div>
+          <h4>总余额</h4>
+          <h1 id="balance" class="money">¥0.00</h1>
+        </div>
+      </div>
+
+      <div class="inc-exp-container">
+        <div>
+          <h4>收入</h4>
+          <p id="money-plus" class="money plus">+¥0.00</p>
+        </div>
+        <div>
+          <h4>支出</h4>
+          <p id="money-minus" class="money minus">-¥0.00</p>
+        </div>
+      </div>
+
+      <h3>添加新交易</h3>
+      <form id="form">
+        <div class="form-control">
+          <label for="date">日期</label>
+          <input type="date" id="date" required />
+        </div>
+        <div class="form-control">
+          <label for="category">分类</label>
+          <select id="category">
+            <option value="食品">食品</option>
+            <option value="衣物">衣物</option>
+            <option value="医疗">医疗</option>
+            <option value="交通">交通</option>
+            <option value="居住">居住</option>
+            <option value="娱乐">娱乐</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-control">
+          <label for="text">内容/备注</label>
+          <input type="text" id="text" placeholder="输入内容..." />
+        </div>
+        <div class="form-control">
+          <label for="amount">金额 <br />
+            (负数 = 支出, 正数 = 收入)</label>
+          <input type="number" id="amount" placeholder="输入金额..." step="0.01" />
+        </div>
+        <button class="btn">添加交易</button>
+      </form>
+    </div>
+
+    <!-- 历史记录 -->
+    <div id="tab-history" class="tab-content">
+      <h3>统计筛选</h3>
+      <div class="filter-container">
+        <div class="filter-row">
+          <select id="filter-type">
+            <option value="month" selected>按月统计</option>
+            <option value="all">显示全部</option>
+            <option value="week">按周统计</option>
+            <option value="category">按分类统计</option>
+          </select>
+        </div>
+        <div class="filter-row" id="filter-date-container" style="display: none;">
+          <input type="month" id="filter-month" style="display: none;">
+          <input type="week" id="filter-week" style="display: none;">
+          <select id="filter-category-select" style="display: none;">
+            <option value="all">全部</option>
+            <option value="食品">食品</option>
+            <option value="衣物">衣物</option>
+            <option value="医疗">医疗</option>
+            <option value="交通">交通</option>
+            <option value="居住">居住</option>
+            <option value="娱乐">娱乐</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 历史记录统计摘要 -->
+      <div id="history-summary-panel" class="history-summary" style="display: none;">
+          <div>当前筛选总计</div>
+          <p class="money" id="history-total" style="font-size: 1.2em;">¥0.00</p>
+          <div style="display: flex; justify-content: space-around; font-size: 0.9em; color: #666; margin-top: 5px;">
+              <span>收入: <span id="history-income" class="plus">¥0.00</span></span>
+              <span>支出: <span id="history-expense" class="minus">¥0.00</span></span>
+          </div>
+          <!-- 分类统计列表容器 -->
+          <ul id="category-stats-list" class="category-stats-list" style="display: none;"></ul>
+      </div>
+
+      <h3>历史记录</h3>
+      <ul id="list" class="list">
+        <!-- 动态生成列表项 -->
+      </ul>
+    </div>
+
+    <!-- 数据管理 -->
+    <div id="tab-data" class="tab-content">
+      <div class="data-mgmt-container" style="border-top: none; margin-top: 0;">
+        <h3>数据管理</h3>
+        <p style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+          您可以导出所有账单数据进行备份，或者导出为 Excel 文件进行汇总分析。
+          <br>导入 JSON 格式备份文件可恢复数据。
+        </p>
+        <div class="data-mgmt-btn-group">
+          <button class="btn-secondary" onclick="exportJSON()">导出备份 (JSON)</button>
+          <button class="btn-secondary" onclick="exportCSV()">导出 Excel (CSV)</button>
+        </div>
+        <div class="data-mgmt-btn-group" style="margin-top: 10px;">
+          <!-- 使用 label 触发 file input，更加语义化且易于样式控制 -->
+          <button class="btn-secondary btn-outline" onclick="document.getElementById('import-file').click()">导入备份 (JSON)</button>
+          <input type="file" id="import-file" style="display: none" accept=".json" onchange="importJSON(event)">
+        </div>
       </div>
     </div>
 
-    <div class="inc-exp-container">
-      <div>
-        <h4>总余额</h4>
-        <h1 id="balance" class="money">¥0.00</h1>
-      </div>
-    </div>
-
-    <div class="inc-exp-container">
-      <div>
-        <h4>收入</h4>
-        <p id="money-plus" class="money plus">+¥0.00</p>
-      </div>
-      <div>
-        <h4>支出</h4>
-        <p id="money-minus" class="money minus">-¥0.00</p>
-      </div>
-    </div>
-
-    <h3>历史记录</h3>
-    <ul id="list" class="list">
-      <!-- 动态生成列表项 -->
-    </ul>
-
-    <h3>添加新交易</h3>
-    <form id="form">
-      <div class="form-control">
-        <label for="date">日期</label>
-        <input type="date" id="date" required />
-      </div>
-      <div class="form-control">
-        <label for="text">内容/备注</label>
-        <input type="text" id="text" placeholder="输入内容..." />
-      </div>
-      <div class="form-control">
-        <label for="amount">金额 <br />
-          (负数 = 支出, 正数 = 收入)</label>
-        <input type="number" id="amount" placeholder="输入金额..." step="0.01" />
-      </div>
-      <button class="btn">添加交易</button>
-    </form>
   </div>
 
   <script>
@@ -286,12 +487,43 @@
     const form = document.getElementById('form');
     const text = document.getElementById('text');
     const amount = document.getElementById('amount');
+    const category = document.getElementById('category');
     const dateInput = document.getElementById('date');
 
+    // Dashboard Elements
+    const dashboardFilter = document.getElementById('dashboard-filter');
+
+    // History Elements
     const filterType = document.getElementById('filter-type');
     const filterDateContainer = document.getElementById('filter-date-container');
     const filterMonth = document.getElementById('filter-month');
     const filterWeek = document.getElementById('filter-week');
+    const filterCategorySelect = document.getElementById('filter-category-select');
+    
+    const historySummaryPanel = document.getElementById('history-summary-panel');
+    const historyTotal = document.getElementById('history-total');
+    const historyIncome = document.getElementById('history-income');
+    const historyExpense = document.getElementById('history-expense');
+    const categoryStatsList = document.getElementById('category-stats-list');
+
+    // Tab Switching Logic
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs and contents
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+
+        // Add active class to clicked tab
+        tab.classList.add('active');
+        
+        // Show corresponding content
+        const target = tab.getAttribute('data-tab');
+        document.getElementById(target).classList.add('active');
+      });
+    });
 
     // 设置默认日期为今天
     dateInput.valueAsDate = new Date();
@@ -304,29 +536,39 @@
     let transactions =
       localStorage.getItem('transactions') !== null ? localStorageTransactions : [];
 
-    // 迁移旧数据：如果没有日期，默认为今天
+    // 迁移旧数据：如果没有日期，默认为今天；如果没有分类，默认为“其他”
     transactions = transactions.map(t => {
-      if (!t.date) {
-        return { ...t, date: new Date().toISOString().split('T')[0] };
+      const updated = { ...t };
+      if (!updated.date) {
+        updated.date = new Date().toISOString().split('T')[0];
       }
-      return t;
+      if (!updated.category) {
+        updated.category = '其他';
+      }
+      return updated;
     });
 
-    // 监听筛选变化
-    filterType.addEventListener('change', updateFilterView);
-    filterMonth.addEventListener('change', () => { init(); });
-    filterWeek.addEventListener('change', () => { init(); });
+    // 监听 Dashboard 筛选变化
+    dashboardFilter.addEventListener('change', updateDashboard);
 
-    function updateFilterView() {
+    // 监听 History 筛选变化
+    filterType.addEventListener('change', updateHistoryFilterView);
+    filterMonth.addEventListener('change', () => { updateHistory(); });
+    filterWeek.addEventListener('change', () => { updateHistory(); });
+    filterCategorySelect.addEventListener('change', () => { updateHistory(); });
+
+    function updateHistoryFilterView() {
       const type = filterType.value;
       if (type === 'all') {
         filterDateContainer.style.display = 'none';
         filterMonth.style.display = 'none';
         filterWeek.style.display = 'none';
+        filterCategorySelect.style.display = 'none';
       } else if (type === 'month') {
         filterDateContainer.style.display = 'block';
         filterMonth.style.display = 'block';
         filterWeek.style.display = 'none';
+        filterCategorySelect.style.display = 'none';
         if (!filterMonth.value) {
           const today = new Date();
           filterMonth.value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -335,15 +577,22 @@
         filterDateContainer.style.display = 'block';
         filterMonth.style.display = 'none';
         filterWeek.style.display = 'block';
+        filterCategorySelect.style.display = 'none';
         if (!filterWeek.value) {
-          // 设置为当前周
           const today = new Date();
           const week = getWeekNumber(today);
-          // ISO 周格式：yyyy-Www
           filterWeek.value = `${today.getFullYear()}-W${String(week).padStart(2, '0')}`;
         }
+      } else if (type === 'category') {
+        filterDateContainer.style.display = 'block';
+        filterMonth.style.display = 'none';
+        filterWeek.style.display = 'none';
+        filterCategorySelect.style.display = 'block';
+        if (!filterCategorySelect.value) {
+          filterCategorySelect.value = 'all';
+        }
       }
-      init();
+      updateHistory();
     }
 
     // 获取周数
@@ -353,6 +602,18 @@
       var yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
       var weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
       return weekNo;
+    }
+
+    // 获取 ISO 周字符串 (yyyy-Www)
+    function getISOWeekStr(dateStr) {
+      const d = new Date(dateStr);
+      const weekNum = getWeekNumber(d);
+      let year = d.getFullYear();
+
+      if (d.getMonth() === 0 && weekNum > 50) year--;
+      if (d.getMonth() === 11 && weekNum === 1) year++;
+
+      return `${year}-W${String(weekNum).padStart(2, '0')}`;
     }
 
     // 添加交易
@@ -368,7 +629,8 @@
         id: generateID(),
         text: text.value,
         amount: +amount.value,
-        date: dateInput.value
+        date: dateInput.value,
+        category: category.value
       };
 
       transactions.push(transaction);
@@ -378,8 +640,13 @@
       // 重置表单，但保留日期
       text.value = '';
       amount.value = '';
+      category.value = '其他';
 
-      init();
+      // Refresh both views
+      updateDashboard();
+      updateHistory();
+      
+      alert('交易添加成功！');
     }
 
     // 生成随机ID
@@ -389,18 +656,16 @@
 
     // 将交易添加到DOM列表
     function addTransactionDOM(transaction) {
-      // 获取符号
       const sign = transaction.amount < 0 ? '-' : '+';
-
       const item = document.createElement('li');
-
-      // 基于金额正负添加类名
       item.classList.add(transaction.amount < 0 ? 'minus' : 'plus');
+      const categoryLabel = transaction.category || '其他';
 
       item.innerHTML = `
                 <span class="date">${transaction.date}</span>
                 <div class="info">
                     <span>${transaction.text}</span>
+                    <small style="color: #666; font-size: 0.8em;">${categoryLabel}</small>
                 </div>
                 <span class="amount">${sign}¥${Math.abs(transaction.amount).toFixed(2)}</span>
                 <button class="delete-btn" onclick="removeTransaction(${transaction.id})">x</button>
@@ -409,25 +674,95 @@
       list.appendChild(item);
     }
 
-    // 更新余额、收入和支出
-    function updateValues(filteredTransactions) {
-      const amounts = filteredTransactions.map(transaction => transaction.amount);
+    // 更新 Dashboard 显示
+    function updateDashboard() {
+      const filter = dashboardFilter.value;
+      let filtered = [...transactions];
+      const today = new Date();
 
+      if (filter === 'month') {
+        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        filtered = filtered.filter(t => t.date.startsWith(currentMonth));
+      } else if (filter === 'last-month') {
+        let lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthStr = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+        filtered = filtered.filter(t => t.date.startsWith(lastMonthStr));
+      } else if (filter === 'week') {
+        const currentWeek = getISOWeekStr(today.toISOString());
+        filtered = filtered.filter(t => getISOWeekStr(t.date) === currentWeek);
+      } else if (filter === 'last-week') {
+        // Calculate last week
+        const lastWeekDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const lastWeek = getISOWeekStr(lastWeekDate.toISOString());
+        filtered = filtered.filter(t => getISOWeekStr(t.date) === lastWeek);
+      } else if (filter === 'year') {
+        const currentYear = String(today.getFullYear());
+        filtered = filtered.filter(t => t.date.startsWith(currentYear));
+      }
+      
+      const amounts = filtered.map(transaction => transaction.amount);
       const total = amounts.reduce((acc, item) => (acc += item), 0).toFixed(2);
-
-      const income = amounts
-        .filter(item => item > 0)
-        .reduce((acc, item) => (acc += item), 0)
-        .toFixed(2);
-
-      const expense = (
-        amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) *
-        -1
-      ).toFixed(2);
+      const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0).toFixed(2);
+      const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1).toFixed(2);
 
       balance.innerText = `¥${total}`;
       money_plus.innerText = `+¥${income}`;
       money_minus.innerText = `-¥${expense}`;
+    }
+
+    // 更新 History 列表及统计
+    function updateHistory() {
+      list.innerHTML = '';
+      categoryStatsList.innerHTML = '';
+      categoryStatsList.style.display = 'none';
+
+      let filteredTransactions = [...transactions];
+      filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      const type = filterType.value;
+
+      if (type === 'month' && filterMonth.value) {
+        filteredTransactions = filteredTransactions.filter(t => t.date.startsWith(filterMonth.value));
+      } else if (type === 'week' && filterWeek.value) {
+        filteredTransactions = filteredTransactions.filter(t => getISOWeekStr(t.date) === filterWeek.value);
+      } else if (type === 'category' && filterCategorySelect.value !== 'all') {
+        filteredTransactions = filteredTransactions.filter(t => (t.category || '其他') === filterCategorySelect.value);
+      }
+
+      // Update History Summary
+      const amounts = filteredTransactions.map(transaction => transaction.amount);
+      const total = amounts.reduce((acc, item) => (acc += item), 0).toFixed(2);
+      const income = amounts.filter(item => item > 0).reduce((acc, item) => (acc += item), 0).toFixed(2);
+      const expense = (amounts.filter(item => item < 0).reduce((acc, item) => (acc += item), 0) * -1).toFixed(2);
+
+      historyTotal.innerText = `¥${total}`;
+      historyIncome.innerText = `+¥${income}`;
+      historyExpense.innerText = `-¥${expense}`;
+      historySummaryPanel.style.display = 'block';
+
+      // Render List
+      filteredTransactions.forEach(addTransactionDOM);
+
+      // 如果是按分类统计（或即使不是），显示分类汇总
+      if (type === 'category' || true) { // 总是可以显示一个简单的分类汇总在详情里
+           // Calculate category totals
+           const categoryTotals = {};
+           filteredTransactions.forEach(t => {
+               const cat = t.category || '其他';
+               if (!categoryTotals[cat]) categoryTotals[cat] = 0;
+               categoryTotals[cat] += t.amount;
+           });
+
+           // Only show if there are transactions
+           if (Object.keys(categoryTotals).length > 0) {
+               categoryStatsList.style.display = 'block';
+               for (const [cat, val] of Object.entries(categoryTotals)) {
+                   const li = document.createElement('li');
+                   li.innerHTML = `<span>${cat}</span> <span style="color: ${val >= 0 ? '#2ecc71' : '#c0392b'}">${val >= 0 ? '+' : ''}¥${Math.abs(val).toFixed(2)}</span>`;
+                   categoryStatsList.appendChild(li);
+               }
+           }
+      }
     }
 
     // 通过ID删除交易
@@ -435,7 +770,8 @@
       if (confirm('确定要删除这条记录吗？')) {
         transactions = transactions.filter(transaction => transaction.id !== id);
         updateLocalStorage();
-        init();
+        updateDashboard();
+        updateHistory();
       }
     }
 
@@ -444,49 +780,109 @@
       localStorage.setItem('transactions', JSON.stringify(transactions));
     }
 
-    // 获取 ISO 周字符串 (yyyy-Www)
-    function getISOWeekStr(dateStr) {
-      const d = new Date(dateStr);
-      const weekNum = getWeekNumber(d);
-      let year = d.getFullYear();
-
-      // 处理跨年周归属问题
-      // 如果日期是1月且属于去年的周（如52/53），年份减1
-      if (d.getMonth() === 0 && weekNum > 50) year--;
-      // 如果日期是12月且属于明年的周（如1），年份加1
-      if (d.getMonth() === 11 && weekNum === 1) year++;
-
-      return `${year}-W${String(weekNum).padStart(2, '0')}`;
-    }
-
     // 初始化应用
     function init() {
-      list.innerHTML = '';
-
-      let filteredTransactions = [...transactions];
-
-      // 默认按日期降序
-      filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      // 获取当前筛选条件
-      const type = filterType.value;
-
-      if (type === 'month' && filterMonth.value) {
-        // filterMonth.value 格式: "2023-10"
-        filteredTransactions = filteredTransactions.filter(t => t.date.startsWith(filterMonth.value));
-      } else if (type === 'week' && filterWeek.value) {
-        // filterWeek.value 格式: "2023-W42"
-        filteredTransactions = filteredTransactions.filter(t => getISOWeekStr(t.date) === filterWeek.value);
-      }
-      // type === 'all' 不做过滤
-
-      filteredTransactions.forEach(addTransactionDOM);
-      updateValues(filteredTransactions);
+        updateDashboard();
+        updateHistoryFilterView();
     }
 
     // 页面加载时初始化
     init();
     form.addEventListener('submit', addTransaction);
+    
+    // --- 数据管理功能 ---
+
+    // 1. 导出 JSON
+    function exportJSON() {
+      const dataStr = JSON.stringify(transactions, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `jz_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // 2. 导出 CSV (Excel)
+    function exportCSV() {
+      const headers = ["ID", "日期", "分类", "内容", "金额"];
+      const csvContent = [
+        headers.join(","),
+        ...transactions.map(t => [
+          t.id, 
+          t.date, 
+          t.category || '其他', 
+          `"${(t.text || '').replace(/"/g, '""')}"`, // 处理双引号
+          t.amount
+        ].join(","))
+      ].join("\n");
+
+      // 添加 BOM 防止 Excel 中文乱码
+      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `jz_export_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // 3. 导入 JSON
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          
+          if (!Array.isArray(data)) {
+            alert('文件格式错误：必须是数组格式的 JSON。');
+            return;
+          }
+
+          if (data.length > 0 && (!data[0].hasOwnProperty('amount') || !data[0].hasOwnProperty('text'))) {
+             if (!confirm('警告：导入的数据格式似乎不匹配，确定要继续吗？')) {
+               return;
+             }
+          }
+
+          let addedCount = 0;
+          if (confirm('点击“确定”将【追加】导入的数据到现有记录中（自动去重）。\n点击“取消”将【覆盖】现有所有数据。')) {
+             const existingIds = new Set(transactions.map(t => t.id));
+             data.forEach(item => {
+               if (!existingIds.has(item.id)) {
+                 transactions.push(item);
+                 existingIds.add(item.id);
+                 addedCount++;
+               }
+             });
+             alert(`成功导入 ${addedCount} 条新记录！`);
+          } else {
+             if (confirm('警告：确定要【清空当前所有数据】并导入新数据吗？此操作不可撤销！')) {
+               transactions = data;
+               alert(`成功恢复 ${data.length} 条记录！`);
+             } else {
+               event.target.value = '';
+               return;
+             }
+          }
+
+          updateLocalStorage();
+          init();
+          
+        } catch(err) {
+          console.error(err);
+          alert('解析失败：请确保文件是有效的 JSON 格式。');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
   </script>
 </body>
 
